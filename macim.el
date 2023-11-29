@@ -1,4 +1,36 @@
-;; -*- lexical-binding: t; -*-
+;;; mac-im.el  --- SIS with dynamic module support   -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2023 Roife Wu
+
+;; Author: Roife Wu <roifewu@gmail.com>
+;; URL: https://github.com/roife/mac-im.el
+;; Version: 0.0.1
+;; Package-Requires: ((emacs "29.1"))
+;; Keywords: macOS, input method, Chinese
+
+;; This file is NOT a part of GNU Emacs.
+
+;; This file is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation; either version 3, or (at your option)
+;; any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; For a full copy of the GNU General Public License
+;; see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This package is similar to https://github.com/laishulu/emacs-smart-input-source,
+;; but it uses dynamic module to switch input source.
+
+;;; Code:
+
+(eval-when-compile (require 'cl-lib))
 
 (defgroup macim nil
   "macim"
@@ -33,13 +65,14 @@
   "Pattern to identify a character as other lang.")
 
 (defvar macim-context-early-predicates nil
-  "Early predicate to detect the context, which is called before computations
-if `sis--back-detect-chars' and `sis--fore-detect-chars', which enhances performance.
+  "Early predicate to detect the context,
+which is called before computations of `sis--back-detect-chars' and
+`sis--fore-detect-chars', which enhances performance.
 
-Each detector is called with no arguments and should return one of the following:
+Each detector is called without arguments and returns one of the following:
 - nil: left the determination to later detectors.
-- 'ascii: English context.
-- 'other: other language context.")
+- `'ascii': English context.
+- `'other': other language context.")
 
 (defvar macim-context-predicates
   '(macim--context-ascii-wrapper
@@ -52,8 +85,8 @@ Each detector should:
   - fore-detect: which is the result of (sis--fore-detect-chars).
 - return one of the following values:
   - nil: left the determination to later detectors.
-  - 'english: English context.
-  - 'other: other language context.")
+  - `'english': English context.
+  - `'other': other language context.")
 
 (defvar macim-blank-pat "[:blank:]"
   )
@@ -123,7 +156,8 @@ Expects to be added to normal hooks."
 (defun macim--back-detect-chars ()
   "Detect char backward by two steps.
 
-First backward skip blank in the current line, then backward skip blank across lines."
+First backward skip blank in current line,
+then backward skip blank across lines."
   (save-excursion
     (skip-chars-backward macim-blank-pat)
     (let ((to (point))
@@ -216,7 +250,7 @@ If POSITION is not provided, then default to be the current position."
          (fore-char (macim--fore-detect-res-char fore-detect)))
     (or
      ; [other]^
-     (and (= back-to (or position (point))) (sis--other-p back-char))
+     (and (= back-to (or position (point))) (macim--other-p back-char))
      ; ^[other]
      (and (= fore-to (or position (point))) (macim--other-p fore-char))
      ; [other lang][blank or not][^][blank or not][not english]
@@ -268,8 +302,7 @@ If POSITION is not provided, then default to be the current position."
     (unless im
       (setq im
             (let* ((back-detect (macim--back-detect-chars))
-                   (fore-detect (macim--fore-detect-chars))
-                   (context nil))
+                   (fore-detect (macim--fore-detect-chars)))
               (cl-loop for predicate in macim-context-predicates
                        for result = (funcall predicate back-detect fore-detect)
                        while (not (memq result '(ascii other)))
@@ -390,7 +423,7 @@ If PATH is non-nil, compile the module to PATH."
   (unless (file-directory-p (concat macim--root "module/"))
     (error "No module source found"))
   (unless (file-exists-p "/Applications/Xcode.app")
-    (error "Xcode not found. You can download pre-compiled module from GitHub."))
+    (error "Xcode not found. You can download pre-compiled module from GitHub"))
 
   (shell-command (concat "echo " (shell-quote-argument (read-passwd "sudo password (required by compiling MacIM):"))
                          " | sudo -S xcode-select --switch /Applications/Xcode.app/Contents/Developer"))
@@ -421,6 +454,7 @@ If PATH is non-nil, compile the module to PATH."
         (error "No %s function found in dynamic module" fn)))
     (setq macim--lib-loaded t)))
 
+;;;###autoload
 (define-minor-mode macim-mode
   "macim-mode"
   :global t
@@ -432,3 +466,8 @@ If PATH is non-nil, compile the module to PATH."
         (add-hook 'post-self-insert-hook #'macim--inline-activation-check))
     (macim--disable-kbd-switching)
     (remove-hook 'post-self-insert-hook #'macim--inline-activation-check)))
+
+(provide 'macim)
+
+
+;;; macim.el ends here
