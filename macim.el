@@ -33,7 +33,7 @@
 (eval-when-compile (require 'cl-lib))
 
 (defgroup macim nil
-  "macim"
+  "Group for macim."
   :group 'macim)
 
 (defconst macim-version "v0.0.1")
@@ -58,15 +58,10 @@
   :type 'string
   :group 'macim)
 
-(defvar macim-ascii-pattern "[a-zA-Z]"
-  "Pattern to identify a character as english.")
-
-(defvar macim-other-pattern "\\cc"
-  "Pattern to identify a character as other lang.")
-
 (defvar macim-context-early-predicates nil
-  "Early predicate to detect the context,
-which is called before computations of `sis--back-detect-chars' and
+  "Early predicate to detect the context.
+
+It is called before computations of `sis--back-detect-chars' and
 `sis--fore-detect-chars', which enhances performance.
 
 Each detector is called without arguments and returns one of the following:
@@ -88,10 +83,7 @@ Each detector should:
   - `'english': English context.
   - `'other': other language context.")
 
-(defvar macim-blank-pat "[:blank:]"
-  )
-
-(defvar macim-inline-header-handler nil
+(defvar macim-inline-head-handler nil
   "Function to delete head spaces.
 
 The cursor will be moved to the beginning of the inline region, and the function
@@ -110,10 +102,19 @@ be called with the beginning position of the tailing whitespaces in region.")
   '(macim-set macim-get)
   "The list of functions in dynamic module.")
 
-(defvar-keymap macim-inline-map
+(defvar-keymap macim--inline-map
   :doc "Keymap used in inline mode."
   "<remap> RET" #'macim--inline-deactive
   "<remap> <return>" #'macim--inline-deactive)
+
+(defvar macim--ascii-pattern "[a-zA-Z]"
+  "Pattern to identify a character as english.")
+
+(defvar macim--other-pattern "\\cc"
+  "Pattern to identify a character as other lang.")
+
+(defvar macim-blank-pattern "[:blank:]"
+  "Pattern to identify a character as blank.")
 
 (defvar macim--lib-loaded nil
   "Whether dynamic module for macim is loaded.")
@@ -121,7 +122,8 @@ be called with the beginning position of the tailing whitespaces in region.")
 (defvar-local macim--inline-ov nil
   "The active inline overlay.")
 
-(defvar macim--kbd-map (make-hash-table :test 'equal))
+(defvar macim--kbd-map (make-hash-table :test 'equal)
+  "The hashtable to store the mapping from Chinese composition keys to ASCII keys.")
 
 (cl-loop for prefix in '("C-" "M-" "s-" "H-" "ESC ")
          do (cl-loop
@@ -133,6 +135,7 @@ be called with the beginning position of the tailing whitespaces in region.")
 
 (defsubst macim-select-ascii ()
   "Select the ASCII-capable keyboard input source.
+
 Expects to be added to normal hooks."
   (macim-set macim-ascii))
 
@@ -142,11 +145,11 @@ Expects to be added to normal hooks."
 
 (defsubst macim--ascii-p (str)
   "Predicate on STR is has no English characters."
-  (and str (string-match-p macim-ascii-pattern str)))
+  (and str (string-match-p macim--ascii-pattern str)))
 
 (defsubst macim--other-p (str)
   "Predicate on STR has /other/ language characters."
-  (and str (string-match-p macim-other-pattern str)))
+  (and str (string-match-p macim--other-pattern str)))
 
 ; to: point after first non-blank char in the same line
 ; char: first non-blank char at the same line (just before position `to')
@@ -154,15 +157,15 @@ Expects to be added to normal hooks."
 ; cross-line-char: first non-blank char cross lines before the current position
 (cl-defstruct macim--back-detect-res to char cross-line-to cross-line-char)
 (defun macim--back-detect-chars ()
-  "Detect char backward by two steps.
+  "Detect char backward:
 
 First backward skip blank in current line,
 then backward skip blank across lines."
   (save-excursion
-    (skip-chars-backward macim-blank-pat)
+    (skip-chars-backward macim-blank-pattern)
     (let ((to (point))
           (char (char-before (point))))
-      (skip-chars-backward (concat macim-blank-pat "[:cntrl:]"))
+      (skip-chars-backward (concat macim-blank-pattern "[:cntrl:]"))
       (let ((cross-line-char (char-before (point))))
         (make-macim--back-detect-res
          :to to
@@ -181,10 +184,10 @@ then backward skip blank across lines."
 
 Forward skip blank in the current line."
   (save-excursion
-    (skip-chars-forward macim-blank-pat)
+    (skip-chars-forward macim-blank-pattern)
     (let ((to (point))
           (char (char-after (point))))
-      (skip-chars-forward (concat macim-blank-pat "[:cntrl:]"))
+      (skip-chars-forward (concat macim-blank-pattern "[:cntrl:]"))
       (let ((cross-line-char (char-after (point))))
         (make-macim--fore-detect-res
          :to to
@@ -196,13 +199,13 @@ Forward skip blank in the current line."
 ;;; kbd
 
 (defun macim-kbd-switch-and-resend (&optional _prompt)
-  "Set up the most-recently-used ASCII-capable keyboard input source.
-Expects to be bound to global keymap's prefix keys in
-`input-decode-map'."
+  "Switch to ascii input source and resend the last input event.
+Expects to be bound to global keymap's prefix keys in `input-decode-map'."
   (macim-select-ascii)
   (vector last-input-event))
 
 (defun macim--enable-kdb-switching ()
+  "Enable key-mapping to switch to ascii input source and send composition keys."
   (map-keymap (lambda (event definition)
                 (if (and (keymapp definition) (integerp event) (not (eq event ?\e)))
                     (let ((ckbd (gethash (vector event) macim--kbd-map)))
@@ -219,6 +222,7 @@ Expects to be bound to global keymap's prefix keys in
   (add-hook 'minibuffer-setup-hook 'macim-select-ascii))
 
 (defun macim--disable-kbd-switching ()
+  "Disable key-mapping to switch to ascii input source and send composition keys."
   (map-keymap (lambda (event definition)
                 (if (and (keymapp definition) (integerp event) (not (eq event ?\e)))
                     (let ((ckbd (gethash (vector event) macim--kbd-map)))
@@ -287,14 +291,24 @@ If POSITION is not provided, then default to be the current position."
           (macim--ascii-p cross-line-back-char)))))
 
 (defsubst macim--context-ascii-wrapper (back-detect fore-detect)
+  "Wrapper for `macim--context-ascii-p'.
+
+BACK-DETECT and FORE-DETECT are arguments of `macim--context-ascii-p'."
   (when (macim--context-ascii-p back-detect fore-detect)
     'ascii))
 
 (defsubst macim--context-other-wrapper (back-detect fore-detect)
+  "Wrapper for `macim--context-other-p'.
+
+BACK-DETECT and FORE-DETECT are arguments of `macim--context-other-p'."
   (when (macim--context-other-p back-detect fore-detect)
     'other))
 
 (defun macim-context-switch ()
+  "Switch input source with context.
+
+Using predicates in `macim-context-early-predicates' and
+`macim-context-predicates'."
   (let ((im (cl-loop for predicate in macim-context-early-predicates
                          for result = (funcall predicate)
                          while (not (memq result '(ascii other)))
@@ -317,7 +331,7 @@ If POSITION is not provided, then default to be the current position."
 
 Check the context to determine whether the overlay should be activated or not,
 if the answer is yes, then activate the /inline region/, set the
-input source to English."
+input source to ascii."
   (when (and (or (eq (preceding-char) ?\s)
                  (eq (preceding-char) 12288)) ;; around char is <spc> <DBC spc>
              (not macim--inline-ov)
@@ -328,7 +342,7 @@ input source to English."
                  (equal (macim-get) macim-other))
         (setq macim--inline-ov (make-overlay (1- (point)) (point) nil t t))
         (overlay-put macim--inline-ov 'face 'macim-inline-face)
-        (overlay-put macim--inline-ov 'keymap 'macim-inline-map)
+        (overlay-put macim--inline-ov 'keymap 'macim--inline-map)
 
         (macim-select-ascii)
         (add-hook 'post-command-hook #'macim--inline-flycheck-deactivate nil t)))))
@@ -386,9 +400,9 @@ input source to English."
 
           (goto-char (overlay-start macim--inline-ov))
           (let ((tighten-fore-to (macim--fore-detect-res-to (macim--fore-detect-chars))))
-            (when (and macim-inline-header-handler
+            (when (and macim-inline-head-handler
                        (> tighten-fore-to (overlay-start macim--inline-ov)))
-              (funcall macim-inline-header-handler tighten-fore-to))))))
+              (funcall macim-inline-head-handler tighten-fore-to))))))
 
     (delete-overlay macim--inline-ov)
     (setq macim--inline-ov nil)))
@@ -397,7 +411,7 @@ input source to English."
 
 ;;;###autoload
 (defun macim-download-module (&optional path)
-  "Download dynamic module from https://github.com/roife/mac-im.el/releases/download/<VERSION>/libMacIM.dylib.
+  "Download dynamic module from GitHub.
 
 If PATH is non-nil, download the module to PATH."
   (interactive)
@@ -425,7 +439,8 @@ If PATH is non-nil, compile the module to PATH."
   (unless (file-exists-p "/Applications/Xcode.app")
     (error "Xcode not found. You can download pre-compiled module from GitHub"))
 
-  (shell-command (concat "echo " (shell-quote-argument (read-passwd "sudo password (required by compiling MacIM):"))
+  (shell-command (concat "echo "
+                         (shell-quote-argument (read-passwd "sudo password (required by compiling MacIM):"))
                          " | sudo -S xcode-select --switch /Applications/Xcode.app/Contents/Developer"))
 
   (setq path (or path macim-lib-path))
@@ -456,7 +471,7 @@ If PATH is non-nil, compile the module to PATH."
 
 ;;;###autoload
 (define-minor-mode macim-mode
-  "macim-mode"
+  "Toggle macim-mode."
   :global t
   :init-value nil
   (if macim-mode
