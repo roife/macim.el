@@ -53,6 +53,12 @@
   :type 'string
   :group 'macim)
 
+(defvar macim-inline-activated-hook nil
+  "Hook run when the inline region overlay is activated.")
+
+(defvar macim-inline-deactivated-hook nil
+  "Hook run when the inline region overlay is deactivated.")
+
 (defcustom macim-other "com.apple.inputmethod.SCIM.Shuangpin"
   "The name of the Other input source."
   :type 'string
@@ -340,12 +346,18 @@ input source to ascii."
            (fore-detect (macim--fore-detect-chars)))
       (when (and (macim--context-other-p back-detect fore-detect (1- (point)))
                  (equal (macim-get) macim-other))
-        (setq macim--inline-ov (make-overlay (1- (point)) (point) nil t t))
-        (overlay-put macim--inline-ov 'face 'macim-inline-face)
-        (overlay-put macim--inline-ov 'keymap 'macim--inline-map)
+        (macim--inline-activate (1- (point)))))))
 
-        (macim-select-ascii)
-        (add-hook 'post-command-hook #'macim--inline-flycheck-deactivate nil t)))))
+(defun macim--inline-activate (start)
+  "Activate the inline region overlay."
+
+  (setq macim--inline-ov (make-overlay start (point) nil t t))
+  (overlay-put macim--inline-ov 'face 'macim-inline-face)
+  (overlay-put macim--inline-ov 'keymap 'macim--inline-map)
+
+  (macim-select-ascii)
+  (run-hooks 'macim-inline-activated-hook)
+  (add-hook 'post-command-hook #'macim--inline-flycheck-deactivate nil t))
 
 (defun macim--inline-flycheck-deactivate ()
   "Check whether to deactivate the inline region overlay."
@@ -405,7 +417,9 @@ input source to ascii."
               (funcall macim-inline-head-handler tighten-fore-to))))))
 
     (delete-overlay macim--inline-ov)
-    (setq macim--inline-ov nil)))
+    (setq macim--inline-ov nil)
+
+    (run-hooks 'macim-inline-deactivated-hook)))
 
 ;;; macim-mode
 
