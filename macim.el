@@ -53,12 +53,6 @@
   :type 'string
   :group 'macim)
 
-(defvar macim-inline-activated-hook nil
-  "Hook run when the inline region overlay is activated.")
-
-(defvar macim-inline-deactivated-hook nil
-  "Hook run when the inline region overlay is deactivated.")
-
 (defcustom macim-other "com.apple.inputmethod.SCIM.Shuangpin"
   "The name of the Other input source."
   :type 'string
@@ -100,6 +94,12 @@ will be called with the end position of the leading whitespaces in region.")
 
 The cursor will be moved to the end of the inline region, and the function will
 be called with the beginning position of the tailing whitespaces in region.")
+
+(defvar macim-inline-activated-hook nil
+  "Hook run when the inline region overlay is activated.")
+
+(defvar macim-inline-deactivated-hook nil
+  "Hook run when the inline region overlay is deactivated.")
 
 (defvar macim--root (file-name-directory (or load-file-name buffer-file-name))
   "The path to the root of the package.")
@@ -503,6 +503,5 @@ If PATH is non-nil, compile the module to PATH."
     (remove-hook 'post-self-insert-hook #'macim--inline-activation-check)))
 
 (provide 'macim)
-
 
 ;;; macim.el ends here
