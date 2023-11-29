@@ -131,10 +131,16 @@ be called with the beginning position of the tailing whitespaces in region.")
 (defvar macim--kbd-map (make-hash-table :test 'equal)
   "The hashtable to store the mapping from Chinese composition keys to ASCII keys.")
 
+(defvar macim--chinese-punc-list '("，" "。" "？" "！" "；" "：" "、" "（" "）" "【" "】" "《" "》" "—" "「" "」" "“" "”")
+  "The list of Chinese punctuation.")
+
+(defvar macim--ascii-punc-list '("," "." "?" "!" ";" ":" "\\" "(" ")" "[" "]" "<" ">" "_" "{" "}" "\"" "\"")
+  "The list of ASCII punctuation.")
+
 (cl-loop for prefix in '("C-" "M-" "s-" "H-" "ESC ")
          do (cl-loop
-             for epunc in '("," "." "?" "!" ";" ":" "\\" "(" ")" "[" "]" "<" ">" "_")
-             for cpunc in '("，" "。" "？" "！" "；" "：" "、" "（" "）" "【" "】" "《" "》" "—")
+             for epunc in macim--chinese-punc-list
+             for cpunc in macim--ascii-punc-list
              do (puthash (kbd (concat prefix epunc)) (kbd (concat prefix cpunc)) macim--kbd-map)))
 
 ;;; helper
