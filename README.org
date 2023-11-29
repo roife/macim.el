@@ -1,0 +1,145 @@
+* macim.el
+
+** Introduction
+
+This package is similar to [[https://github.com/laishulu/emacs-smart-input-source][emacs-smart-input-source]], but it uses dynamic module to switch input source.
+
+** Installation
+
+*** Requirements
+
+- macOS 10.15 or later
+- Emacs 29.1 or later, built with dynamic module support (use =--with-modules= during compilation)
+
+*** Build dynamic module
+
+**** Pre-built (recommendation)
+
+If you enable =macim-mode= and the module cannot be found, it will prompt whether to automatically download it from GitHub. Or you can manually retrieve the pre-built module from the [[https://github.com/roife/macim.el/releases][releases]] section and place the =dylib= file in the =emacs-macos-tokenizer-lib-path= (by default, it is located at =modules/libMacIM.dylib= within your personal configuration folder, normally =~/.emacs.d/modules/libMacIM.dylib=).
+
+*Current version of the dynamic module is v0.0.1, make sure you have updated to latest module.*
+
+**** Manually build
+
+- Install Xcode.
+- Build the module using =macim-compile-module=, which compiles and copies the module to =macim-lib-path=.
+
+If you enconter the folloing error:
+
+#+begin_quote
+No such module "PackageDescription"
+#+end_quote
+
+run the following command and try again:
+
+#+begin_src bash
+  sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+#+end_src
+
+*** Install package
+
+Install with =straight= and =use-package=:
+
+#+begin_src emacs-lisp
+  (use-package macim
+    :straight (:host github :repo "roife/emt"
+                     :files ("*.el" "module/*" "module"))
+    :hook (after-init . emt-mode))
+#+end_src
+
+** Configurations
+
+For simplicity, Macim does not come with most customizations preset. You can use the configurations in this section as presets.
+
+If you are using =use-package=, you can put the following configurations into =:config=.
+
+*** context-mode related
+
+**** Moew
+
+Select ascii input source when exiting =meow-insert-mode=.
+
+#+begin_src elisp
+  (add-hook 'meow-insert-exit-hook #'macim-select-ascii)
+#+end_src
+
+Detect by predicates when entering =meow-insert-mode=.
+
+#+begin_src elisp
+  (add-hook 'meow-insert-enter-hook #'macim-context-switch)
+#+end_src
+
+**** Detect input source after selecting window
+
+#+begin_src elisp
+  (advice-add 'select-window :after #'(lambda (&rest _) (macim-context-switch)))
+#+end_src
+
+**** Disable predicates in certain modes for better performance
+
+Here takes =pdf-view-mode= as an example.
+
+#+begin_src elisp
+  (defun +macim-context-ignore-modes ()
+    (when (derived-mode-p 'pdf-view-mode)
+      'ascii))
+
+  (add-to-list 'macim-context-early-predicates #'+macim-context-ignore-modes)
+#+end_src
+
+*** inline-mode related
+
+**** Trim excess spaces on both sides on deactivation
+
+#+begin_src elisp
+  (setq +macim-chinese-punc-chars (mapcar #'string-to-char macim--chinese-punc-list))
+
+  (defun +macim-remove-head-space-after-cc-punc (_)
+    (when (or (memq (char-before) +macim-chinese-punc-chars)
+              (bolp))
+      (delete-char 1)))
+  (setq macim-inline-head-handler #'+macim-remove-head-space-after-cc-punc)
+
+  (defun +macim-remove-tail-space-before-cc-punc (tighten-back-to)
+    (when (> (point) tighten-back-to)
+      (backward-delete-char (1- (- (point) tighten-back-to))))
+    (when (and (eq (char-before) ? )
+               (memq (char-after) +macim-chinese-punc-chars))
+      (backward-delete-char 1)))
+  (setq macim-inline-tail-handler #'+macim-remove-tail-space-before-cc-punc)
+#+end_src
+
+**** Before inserting Chinese punctuation, delete extra spaces introduced by inline mode
+
+#+begin_src elisp
+  (defun +macim-line-set-last-space-pos ()
+    (when (eq (char-before) ?\s)
+      (setq +macim-inline-english-last-space-pos (point))))
+  (add-hook 'macim-inline-deactivated-hook #'+macim-line-set-last-space-pos)
+
+  (defun +macim-inline-remove-redundant-space ()
+    (when (eq +macim-inline-english-last-space-pos (1- (point)))
+      (when (and (memq (char-before) +macim-chinese-punc-chars)
+                 (eq (char-before (1- (point))) ?\s))
+        (save-excursion
+          (backward-char 2)
+          (delete-char 1)
+          (setq-local +macim-inline-english-last-space-pos nil)))
+      (remove-hook 'post-self-insert-hook #'+macim-inline-remove-redundant-space t))
+    )
+
+  (defun +macim-inline-add-post-self-insert-hook ()
+    (add-hook 'post-self-insert-hook #'+macim-inline-remove-redundant-space nil t))
+
+  (add-hook 'macim-inline-deactivated-hook #'+macim-inline-add-post-self-insert-hook)
+#+end_src
+
+** Customizations
+
+<TODO>
+
+** Acknowledgements
+
+This package is inspired by [[https://github.com/laishulu/emacs-smart-input-source][emacs-smart-input-source]] which is a awesome package for input method switching.
+
+The dynamic module uses [[https://github.com/SavchenkoValeriy/emacs-swift-module.git][emacs-swift-module]], which provides an interface for writing Emacs dynamic modules in Swift.
