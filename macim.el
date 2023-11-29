@@ -376,7 +376,6 @@ If PATH is non-nil, download the module to PATH."
     (url-copy-file url path t)))
 
 ;;;###autoload
-;;;###autoload
 (defun macim-compile-module (&optional path)
   "Compile dynamic module.
 
