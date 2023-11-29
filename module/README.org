@@ -1,0 +1,39 @@
+* MacIM
+
+This dynamic module provides API to switch input methods in macOS.
+
+** Build
+
+This module is written in Swift, and requires macOS 10.15 or later.
+
+#+begin_src bash
+  # For release
+  swift build -c release
+
+  # For debug
+  swift build
+#+end_src
+
+If you enconter the folloing error:
+
+#+begin_quote
+No such module "PackageDescription"
+#+end_quote
+
+run the following command and try again:
+
+#+begin_src bash
+  sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+#+end_src
+
+** Usage
+
+The module provides two functions:
+
+- =macim-get=
+
+    This function returns the current input method.
+
+- =macim-set=
+
+    This functions takes a string as an argument, and sets the input method to the given one. It returns =t= if the input method is successfully set, otherwise =nil=.
