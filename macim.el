@@ -110,8 +110,8 @@ be called with the beginning position of the tailing whitespaces in region.")
 
 (defvar-keymap macim--inline-map
   :doc "Keymap used in inline mode."
-  "<remap> RET" #'macim--inline-deactive
-  "<remap> <return>" #'macim--inline-deactive)
+  "RET" #'macim--inline-deactivate
+  "<return>" #'macim--inline-deactivate)
 
 (defvar macim--ascii-pattern "[a-zA-Z]"
   "Pattern to identify a character as english.")
@@ -359,7 +359,7 @@ input source to ascii."
 
   (setq macim--inline-ov (make-overlay start (point) nil t t))
   (overlay-put macim--inline-ov 'face 'macim-inline-face)
-  (overlay-put macim--inline-ov 'keymap 'macim--inline-map)
+  (overlay-put macim--inline-ov 'keymap macim--inline-map)
 
   (macim-select-ascii)
   (run-hooks 'macim-inline-activated-hook)
@@ -392,10 +392,11 @@ input source to ascii."
                      (> back-to (overlay-start macim--inline-ov))
                      (= (+ back-to 2) ;; deactivate with 2 spaces
                         (point))))
-        (macim--inline-deactive)))))
+        (macim--inline-deactivate)))))
 
-(defun macim--inline-deactive ()
+(defun macim--inline-deactivate ()
   "Deactivate the inline region overlay."
+  (interactive)
   (when (overlayp macim--inline-ov)
     (remove-hook 'post-command-hook #'macim--inline-flycheck-deactivate t)
 
