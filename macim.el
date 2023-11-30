@@ -61,11 +61,11 @@
 (defvar macim-context-early-predicates nil
   "Early predicate to detect the context.
 
-It is called before computations of `sis--back-detect-chars' and
-`sis--fore-detect-chars', which enhances performance.
+It is called before computations of `macim--back-detect-chars' and
+`macim--fore-detect-chars', which enhances performance.
 
-Each detector is called without arguments and returns one of the following:
-- nil: left the determination to later detectors.
+Each predicate is called without arguments and returns one of the following:
+- nil: left the determination to later predicates.
 - `'ascii': English context.
 - `'other': other language context.")
 
@@ -74,13 +74,13 @@ Each detector is called without arguments and returns one of the following:
     macim--context-other-wrapper)
   "Predicate to detect the context.
 
-Each detector should:
+Each predicate should:
 - have two arguments:
-  - back-detect: which is the result of (sis--back-detect-chars).
-  - fore-detect: which is the result of (sis--fore-detect-chars).
+  - back-detect: which is the result of (macim--back-detect-chars).
+  - fore-detect: which is the result of (macim--fore-detect-chars).
 - return one of the following values:
-  - nil: left the determination to later detectors.
-  - `'english': English context.
+  - nil: left the determination to later predicates.
+  - `'ascii': English context.
   - `'other': other language context.")
 
 (defvar macim-inline-head-handler nil

@@ -136,7 +136,44 @@ Here takes =pdf-view-mode= as an example.
 
 ** Customizations
 
-<TODO>
+*** Face
+
+- =macim-inline-face=: Face of the overlay for =inline-mode= region
+
+*** Variables
+
+- =macim-lib-path=: The path to the directory of dynamic library for macim.
+- =macim-ascii=: The ASCII input source (i.e. English input source). Default: =com.apple.keylayout.ABC=.
+- =macim-other=: The =other= input source (e.g. Chinese input source). Default: =com.apple.inputmethod.SCIM.Shuangpin=
+
+**** context-mode related
+
+Each predicate for context-mode should return on the of following values:
+
+- =nil=: left the determination to later predicates
+- =ascii=: switch to ASCII input source
+- =other=: switch to =other= input source
+
+Once any of the predicates returns a non-nil results, the rest of predicates are not evaluated.
+
+- =macim-context-early-predicates=: Predicate to detect the context. It is called before computations of =macim--back-detect-chars= and
+=macim--fore-detect-chars=. So predicates that do not need context can be put here.
+- =macim-context-predicates=: Predicate to detect the context. Each predicate have two arguments: =back-detect= and =fore-detect=.
+
+The =back-detect= is a struct that contains the following fields:
+- =to=: The position of the first non-blank char before the current position in current line
+- =char=: The first non-blank char before the current position in current line
+- =cross-line-to=: Same as `to', but cross lines
+- =cross-line-char=: Same as `char', but cross lines
+
+Similarly, the =fore-detect= is a struct that contains four fields which are the same as =back-detect=, but for the positions and chars after the current position.
+
+**** inline-mode related
+
+- =macim-inline-head-handler=: Function to delete head spaces. The cursor will be moved to the beginning of the inline region, and the function will be called with the end position of the leading whitespaces in region.
+- =macim-inline-tail-handler=: Function to delete tail spaces. The cursor will be moved to the end of the inline region, and the function will be called with the start position of the trailing whitespaces in region.
+
+- =macim-inline-activated-hook=, =macim-inline-deactivated-hook=: Hook run when inline mode is activated/deactivated.
 
 ** Acknowledgements
 
