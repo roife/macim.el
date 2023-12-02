@@ -156,8 +156,7 @@ Each predicate for context-mode should return on the of following values:
 
 Once any of the predicates returns a non-nil results, the rest of predicates are not evaluated.
 
-- =macim-context-early-predicates=: Predicate to detect the context. It is called before computations of =macim--back-detect-chars= and
-=macim--fore-detect-chars=. So predicates that do not need context can be put here.
+- =macim-context-early-predicates=: Predicate to detect the context. It is called before computations of =macim--back-detect-chars= and =macim--fore-detect-chars=. So predicates that do not need context can be put here.
 - =macim-context-predicates=: Predicate to detect the context. Each predicate have two arguments: =back-detect= and =fore-detect=.
 
 The =back-detect= is a struct that contains the following fields:
