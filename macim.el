@@ -149,11 +149,13 @@ be called with the beginning position of the tailing whitespaces in region.")
   "Select the ASCII-capable keyboard input source.
 
 Expects to be added to normal hooks."
-  (macim-set macim-ascii))
+  (when macim--lib-loaded
+    (macim-set macim-ascii)))
 
 (defsubst macim-select-other ()
   "Select the other input source defined by `macim-other'."
-  (macim-set macim-other))
+  (when macim--lib-loaded
+    (macim-set macim-other)))
 
 (defsubst macim--ascii-p (str)
   "Predicate on STR is has no English characters."
