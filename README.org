@@ -15,7 +15,7 @@ This package is similar to [[https://github.com/laishulu/emacs-smart-input-sourc
 
 **** Pre-built (recommendation)
 
-If you enable =macim-mode= and the module cannot be found, it will prompt whether to automatically download it from GitHub. Or you can manually retrieve the pre-built module from the [[https://github.com/roife/macim.el/releases][releases]] section and place the =dylib= file in the =emacs-macos-tokenizer-lib-path= (by default, it is located at =modules/libMacIM.dylib= within your personal configuration folder, normally =~/.emacs.d/modules/libMacIM.dylib=).
+If you enable =macim-mode= and the module cannot be found, it will prompt whether to automatically download it from GitHub. Or you can manually retrieve the pre-built module from the [[https://github.com/roife/macim.el/releases][releases]] section and place the =dylib= file in the =macim-lib-path= (by default, it is located at =modules/libMacIM.dylib= within your personal configuration folder, normally =~/.emacs.d/modules/libMacIM.dylib=).
 
 *Current version of the dynamic module is v0.0.1, make sure you have updated to latest module.*
 

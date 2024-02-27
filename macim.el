@@ -428,6 +428,16 @@ input source to ascii."
 
     (run-hooks 'macim-inline-deactivated-hook)))
 
+(defun macim-get-arch ()
+  (cond
+   ((string-match-p "aarch64" system-configuration)
+    "aarch64")
+   ((string-match-p "x86_64" system-configuration)
+    "x86_64")
+   (t
+    (error "Unknow architecture")))
+  )
+
 ;;; macim-mode
 
 ;;;###autoload
@@ -437,10 +447,11 @@ input source to ascii."
 If PATH is non-nil, download the module to PATH."
   (interactive)
   (unless (eq system-type 'darwin)
-    (error "Only support macOS"))
+    (error "MacIM only support macOS"))
   (setq path (or path macim-lib-path))
   (make-directory (file-name-directory path) t)
-  (let ((url (format "https://github.com/roife/mac-im.el/releases/download/%s/libMacIM.dylib" macim-version)))
+  (let* ((arch (macim-get-arch))
+         (url (format "https://github.com/roife/mac-im.el/releases/download/%s/libMacIM-%s.dylib" macim-version arch)))
     (url-copy-file url path t)))
 
 ;;;###autoload
