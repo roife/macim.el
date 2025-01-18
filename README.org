@@ -42,7 +42,7 @@ Install with =straight= and =use-package=:
 
 #+begin_src emacs-lisp
   (use-package macim
-    :straight (:host github :repo "roife/emt"
+    :straight (:host github :repo "roife/macim.el"
                      :files ("*.el" "module/*" "module"))
     :hook (after-init . emt-mode))
 #+end_src
